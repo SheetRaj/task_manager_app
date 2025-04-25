@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'controllers/task_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'blocs/task_bloc.dart';
 import 'screens/task_screen.dart';
 
 void main() {
@@ -12,8 +12,8 @@ class TaskManagerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => TaskProvider(),
+    return BlocProvider(
+      create: (_) => TaskBloc(),
       child: MaterialApp(
         title: 'Task Manager',
         theme: ThemeData(

@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../controllers/task_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/task_bloc.dart';
+import '../blocs/task_event.dart';
+import '../blocs/task_state.dart';
+import '../widgets/task_item.dart';
 
 class TaskScreen extends StatelessWidget {
   const TaskScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final taskProvider = Provider.of<TaskProvider>(context);
-    final TextEditingController _taskController = TextEditingController();
+    final TextEditingController taskController = TextEditingController();
 
-    void _showAddTaskDialog() {
+    void showAddTaskDialog() {
       showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
             title: const Text('Add Task'),
             content: TextField(
-              controller: _taskController,
+              controller: taskController,
               decoration: const InputDecoration(hintText: 'Enter task title'),
             ),
             actions: [
@@ -27,8 +29,14 @@ class TaskScreen extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () {
-                  taskProvider.addTask(_taskController.text);
-                  Navigator.pop(context);
+                  if (taskController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a task title')),
+                    );
+                  } else {
+                    context.read<TaskBloc>().add(AddTaskEvent(taskController.text));
+                    Navigator.pop(context);
+                  }
                 },
                 child: const Text('Add'),
               ),
@@ -42,23 +50,25 @@ class TaskScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Task Manager'),
       ),
-      body: ListView.builder(
-        itemCount: taskProvider.tasks.length,
-        itemBuilder: (context, index) {
-          final task = taskProvider.tasks[index];
-          return ListTile(
-            title: Text(task.title),
-            trailing: Checkbox(
-              value: task.isCompleted,
-              onChanged: (value) {
-                taskProvider.toggleTaskCompletion(index);
-              },
-            ),
+      body: BlocBuilder<TaskBloc, TaskState>(
+        builder: (context, state) {
+          return ListView.builder(
+            itemCount: state.tasks.length,
+            itemBuilder: (context, index) {
+              final task = state.tasks[index];
+              return TaskItem(
+                task: task,
+                index: index,
+                onToggle: (index) {
+                  context.read<TaskBloc>().add(ToggleTaskCompletionEvent(index));
+                },
+              );
+            },
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTaskDialog,
+        onPressed: showAddTaskDialog,
         child: const Icon(Icons.add),
       ),
     );
