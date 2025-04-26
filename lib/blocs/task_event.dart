@@ -15,3 +15,16 @@ class ToggleTaskCompletionEvent extends TaskEvent {
 class LoadTasksEvent extends TaskEvent {
   LoadTasksEvent();
 }
+
+class DeleteTaskEvent extends TaskEvent {
+  final int index;
+
+  DeleteTaskEvent(this.index);
+}
+
+class EditTaskEvent extends TaskEvent {
+  final int index;
+  final String newTitle;
+
+  EditTaskEvent(this.index, this.newTitle);
+}

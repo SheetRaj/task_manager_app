@@ -73,6 +73,49 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       }
     });
 
+    on<DeleteTaskEvent>((event, emit) async {
+      if (event.index >= 0 && event.index < state.tasks.length) {
+        final updatedTasks = List<Task>.from(state.tasks)
+          ..removeAt(event.index);
+        emit(TaskState(
+          tasks: updatedTasks,
+          isLoading: true,
+        ));
+
+        try {
+          await _storageService.saveTasks(updatedTasks);
+          emit(TaskState(tasks: updatedTasks));
+        } catch (e) {
+          emit(TaskState(
+            tasks: updatedTasks,
+            error: 'Failed to delete task: $e',
+          ));
+        }
+      }
+    });
+
+    on<EditTaskEvent>((event, emit) async {
+      if (event.index >= 0 && event.index < state.tasks.length) {
+        final updatedTasks = List<Task>.from(state.tasks);
+        final taskToEdit = updatedTasks[event.index];
+        updatedTasks[event.index] = Task(
+            id: taskToEdit.id,
+            title: event.newTitle,
+            isCompleted: taskToEdit.isCompleted);
+        emit(TaskState(tasks: updatedTasks, isLoading: true));
+
+        try {
+          await _storageService.saveTasks(updatedTasks);
+          emit(TaskState(tasks: updatedTasks));
+        } catch (e) {
+          emit(TaskState(
+            tasks: updatedTasks,
+            error: 'Failed to edit task: $e',
+          ));
+        }
+      }
+    });
+
     _initialize();
   }
 
