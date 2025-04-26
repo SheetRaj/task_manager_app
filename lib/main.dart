@@ -6,6 +6,7 @@ import 'package:task_manager_app/screens/task_screen.dart';
 void main() {
   runApp(const TaskManagerApp());
 }
+
 /// The main application widget for the Task Manager app.
 class TaskManagerApp extends StatelessWidget {
   /// Creates a [TaskManagerApp].

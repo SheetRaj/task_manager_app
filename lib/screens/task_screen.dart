@@ -31,10 +31,13 @@ class TaskScreen extends StatelessWidget {
                 onPressed: () {
                   if (taskController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please enter a task title')),
+                      const SnackBar(
+                          content: Text('Please enter a task title')),
                     );
                   } else {
-                    context.read<TaskBloc>().add(AddTaskEvent(taskController.text));
+                    context
+                        .read<TaskBloc>()
+                        .add(AddTaskEvent(taskController.text));
                     Navigator.pop(context);
                   }
                 },
@@ -60,7 +63,9 @@ class TaskScreen extends StatelessWidget {
                 task: task,
                 index: index,
                 onToggle: (index) {
-                  context.read<TaskBloc>().add(ToggleTaskCompletionEvent(index));
+                  context
+                      .read<TaskBloc>()
+                      .add(ToggleTaskCompletionEvent(index));
                 },
               );
             },
