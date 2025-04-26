@@ -5,58 +5,79 @@ import 'package:task_manager_app/blocs/task_event.dart';
 import 'package:task_manager_app/blocs/task_state.dart';
 import 'package:task_manager_app/widgets/task_item.dart';
 
-class TaskScreen extends StatelessWidget {
+class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController taskController = TextEditingController();
+  State<TaskScreen> createState() => _TaskScreenState();
+}
 
-    void showAddTaskDialog() {
-      taskController.clear();
-      showDialog<void>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Add Task'),
-            content: TextField(
-              controller: taskController,
-              decoration: const InputDecoration(hintText: 'Enter task title'),
+class _TaskScreenState extends State<TaskScreen> {
+  final _taskController = TextEditingController();
+
+  void _showAddTaskDialog() {
+    _taskController.clear();
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Task'),
+          content: TextField(
+            controller: _taskController,
+            decoration: const InputDecoration(hintText: 'Enter task title'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  if (taskController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Please enter a task title')),
-                    );
-                  } else {
-                    context
-                        .read<TaskBloc>()
-                        .add(AddTaskEvent(taskController.text));
-                    taskController.clear();
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
-          );
-        },
-      );
-    }
+            TextButton(
+              onPressed: () {
+                if (_taskController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a task title'),
+                    ),
+                  );
+                } else {
+                  context
+                      .read<TaskBloc>()
+                      .add(AddTaskEvent(_taskController.text));
+                  _taskController.clear();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Task Manager'),
       ),
-      body: BlocBuilder<TaskBloc, TaskState>(
+      body: BlocConsumer<TaskBloc, TaskState>(
+        listener: (context, state) {
+          if (state.error != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.error!)),
+            );
+          }
+        },
         builder: (context, state) {
+          if (state.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state.tasks.isEmpty) {
+            return const Center(
+              child: Text('No tasks yet. Add one!'),
+            );
+          }
           return ListView.builder(
             itemCount: state.tasks.length,
             itemBuilder: (context, index) {
@@ -75,9 +96,15 @@ class TaskScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showAddTaskDialog,
+        onPressed: _showAddTaskDialog,
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
   }
 }

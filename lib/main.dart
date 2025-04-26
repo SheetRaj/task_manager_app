@@ -18,6 +18,7 @@ class TaskManagerApp extends StatelessWidget {
     return BlocProvider(
       create: (_) => TaskBloc(storageService: TaskStorageService()),
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         title: 'Task Manager',
         theme: ThemeData(
           primarySwatch: Colors.blue,
