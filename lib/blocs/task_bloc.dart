@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/task.dart';
-import 'task_event.dart';
-import 'task_state.dart';
+import 'package:task_manager_app/blocs/task_event.dart';
+import 'package:task_manager_app/blocs/task_state.dart';
+import 'package:task_manager_app/models/task.dart';
 
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   TaskBloc()

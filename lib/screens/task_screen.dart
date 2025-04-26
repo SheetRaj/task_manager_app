@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/task_bloc.dart';
-import '../blocs/task_event.dart';
-import '../blocs/task_state.dart';
-import '../widgets/task_item.dart';
+import 'package:task_manager_app/blocs/task_bloc.dart';
+import 'package:task_manager_app/blocs/task_event.dart';
+import 'package:task_manager_app/blocs/task_state.dart';
+import 'package:task_manager_app/widgets/task_item.dart';
 
 class TaskScreen extends StatelessWidget {
   const TaskScreen({super.key});
@@ -13,7 +13,7 @@ class TaskScreen extends StatelessWidget {
     final TextEditingController taskController = TextEditingController();
 
     void showAddTaskDialog() {
-      showDialog(
+      showDialog<void>(
         context: context,
         builder: (context) {
           return AlertDialog(
