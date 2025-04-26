@@ -13,6 +13,7 @@ class TaskScreen extends StatelessWidget {
     final TextEditingController taskController = TextEditingController();
 
     void showAddTaskDialog() {
+      taskController.clear();
       showDialog<void>(
         context: context,
         builder: (context) {
@@ -38,6 +39,7 @@ class TaskScreen extends StatelessWidget {
                     context
                         .read<TaskBloc>()
                         .add(AddTaskEvent(taskController.text));
+                    taskController.clear();
                     Navigator.pop(context);
                   }
                 },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_manager_app/blocs/task_bloc.dart';
 import 'package:task_manager_app/screens/task_screen.dart';
+import 'package:task_manager_app/services/task_storage_service.dart';
 
 void main() {
   runApp(const TaskManagerApp());
@@ -15,7 +16,7 @@ class TaskManagerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => TaskBloc(),
+      create: (_) => TaskBloc(storageService: TaskStorageService()),
       child: MaterialApp(
         title: 'Task Manager',
         theme: ThemeData(

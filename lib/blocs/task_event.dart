@@ -11,3 +11,7 @@ class ToggleTaskCompletionEvent extends TaskEvent {
 
   ToggleTaskCompletionEvent(this.index);
 }
+
+class LoadTasksEvent extends TaskEvent {
+  LoadTasksEvent();
+}
