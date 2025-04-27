@@ -6,6 +6,8 @@ import '../models/task.dart';
 
 class TaskStorageService {
   static const String _tasksKey = 'tasks';
+  static const int _maxRetries = 3;
+  static const Duration _retryDelay = Duration(milliseconds: 500);
 
   // Loads tasks from shared preferences.
   Future<List<Task>> loadTasks() async {
@@ -28,17 +30,26 @@ class TaskStorageService {
   // Saves the given [tasks] to shared preferences.
   Future<void> saveTasks(List<Task> tasks) async {
     final prefs = await SharedPreferences.getInstance();
-    final tasksJson = jsonEncode(
-      tasks.map(
-        (task) {
-          return {
-            'id': task.id,
-            'title': task.title,
-            'isCompleted': task.isCompleted,
-          };
-        },
-      ).toList(),
-    );
-    await prefs.setString(_tasksKey, tasksJson);
+    final tasksJson = jsonEncode(tasks.map(
+      (task) {
+        return {
+          'id': task.id,
+          'title': task.title,
+          'isCompleted': task.isCompleted,
+        };
+      },
+    ).toList());
+
+    for (int attempt = 1; attempt <= _maxRetries; attempt++) {
+      try {
+        await prefs.setString(_tasksKey, tasksJson);
+        return;
+      } catch (e) {
+        if (attempt == _maxRetries) {
+          throw Exception('Failed to save tasks after $_maxRetries attempts');
+        }
+        await Future<void>.delayed(_retryDelay);
+      }
+    }
   }
 }

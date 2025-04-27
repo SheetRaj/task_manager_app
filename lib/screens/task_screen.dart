@@ -167,7 +167,10 @@ class _TaskScreenState extends State<TaskScreen> {
                   ),
                   confirmDismiss: (direction) async {
                     if (direction == DismissDirection.startToEnd) {
-                      Future.delayed(Duration.zero, () => _showEditTaskDialog(index, task.title)); // instantly show dialog
+                      Future.delayed(
+                          Duration.zero,
+                          () => _showEditTaskDialog(
+                              index, task.title)); // instantly show dialog
                       return false;
                     } else {
                       return await _showDeleteConfirmDialog(context);
@@ -179,7 +182,8 @@ class _TaskScreenState extends State<TaskScreen> {
                     }
                   },
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200), // lighter, faster
+                    duration:
+                        const Duration(milliseconds: 200), // lighter, faster
                     curve: Curves.fastOutSlowIn, // smooth but quicker
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.95),
@@ -193,28 +197,39 @@ class _TaskScreenState extends State<TaskScreen> {
                       ],
                     ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20.0, vertical: 14.0),
                       title: Text(
                         task.title,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
-                          color: task.isCompleted ? Colors.grey : Colors.black87,
-                          decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                          color:
+                              task.isCompleted ? Colors.grey : Colors.black87,
+                          decoration: task.isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                       ),
                       leading: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
-                        transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(scale: animation, child: child),
                         child: task.isCompleted
-                            ? const Icon(Icons.check_box, key: ValueKey(true), color:
-                        Colors.green, size: 28)
-                            : const Icon(Icons.check_box_outline_blank_outlined, key: ValueKey(false),
-                            color: Colors.grey, size: 28),
+                            ? const Icon(Icons.check_box,
+                                key: ValueKey(true),
+                                color: Colors.green,
+                                size: 28)
+                            : const Icon(Icons.check_box_outline_blank_outlined,
+                                key: ValueKey(false),
+                                color: Colors.grey,
+                                size: 28),
                       ),
                       onTap: () {
-                        context.read<TaskBloc>().add(ToggleTaskCompletionEvent(index));
+                        context
+                            .read<TaskBloc>()
+                            .add(ToggleTaskCompletionEvent(index));
                       },
                     ),
                   ),
