@@ -7,6 +7,8 @@ import 'package:task_manager_app/services/task_storage_service.dart';
 /// Manages the business logic for task-related operations.
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final TaskStorageService _storageService;
+  Task? _lastDeletedTask;
+  int? _lastDeletedIndex;
 
   /// Creates a [TaskBloc] with an initial list of tasks loaded from storage.
   TaskBloc({TaskStorageService? storageService})
@@ -75,8 +77,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     on<DeleteTaskEvent>((event, emit) async {
       if (event.index >= 0 && event.index < state.tasks.length) {
-        final updatedTasks = List<Task>.from(state.tasks)
-          ..removeAt(event.index);
+        final updatedTasks = List<Task>.from(state.tasks);
+        _lastDeletedTask = updatedTasks[event.index];
+        _lastDeletedIndex = event.index;
+        updatedTasks.removeAt(event.index);
         emit(TaskState(
           tasks: updatedTasks,
           isLoading: true,
@@ -92,7 +96,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           ));
         }
       }
-    });
+    }, transformer: null);
 
     on<EditTaskEvent>((event, emit) async {
       if (event.index >= 0 && event.index < state.tasks.length) {
@@ -115,6 +119,30 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         }
       }
     });
+
+    on<UndoDeleteTaskEvent>((event, emit) async {
+      if (_lastDeletedTask != null && _lastDeletedIndex != null) {
+        final updatedTasks = List<Task>.from(state.tasks);
+        updatedTasks.insert(_lastDeletedIndex!, _lastDeletedTask!);
+        emit(TaskState(
+          tasks: updatedTasks,
+          isLoading: true,
+        ));
+
+        try {
+          await _storageService.saveTasks(updatedTasks);
+          print('After saving (undo): $updatedTasks');
+          emit(TaskState(tasks: updatedTasks));
+          _lastDeletedTask = null;
+          _lastDeletedIndex = null;
+        } catch (e) {
+          emit(TaskState(
+            tasks: updatedTasks,
+            error: 'Failed to undo deletion: $e',
+          ));
+        }
+      }
+    }, transformer: null);
 
     _initialize();
   }
