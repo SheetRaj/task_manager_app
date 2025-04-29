@@ -6,9 +6,7 @@ import 'package:task_manager_app/blocs/task_event.dart';
 import 'package:task_manager_app/blocs/task_state.dart';
 import 'package:task_manager_app/widgets/swipe_action_background.dart';
 
-/// A screen that displays a list of tasks and allows adding new ones.
 class TaskScreen extends StatefulWidget {
-  /// Creates a [TaskScreen].
   const TaskScreen({super.key});
 
   @override
@@ -19,6 +17,9 @@ class _TaskScreenState extends State<TaskScreen> {
   final _taskController = TextEditingController();
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   late TaskBloc _taskBloc;
+  String _selectedCategory = 'Uncategorized';
+  bool _isAddingNewCategory = false;
+  final _categoryController = TextEditingController();
 
   @override
   void initState() {
@@ -61,76 +62,245 @@ class _TaskScreenState extends State<TaskScreen> {
   }
 
   void _showAddTaskDialog() {
+    final parentContext = context; // Capture the TaskScreen's context
     _taskController.clear();
+    _categoryController.clear();
+    _selectedCategory = 'Uncategorized'; // Reset category
+    _isAddingNewCategory = false; // Reset toggle
     showDialog<void>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Task'),
-          content: TextField(
-            controller: _taskController,
-            decoration: const InputDecoration(hintText: 'Enter task title'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (_taskController.text.trim().isEmpty) {
-                  _scaffoldMessengerKey.currentState?.showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a task title'),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            return AlertDialog(
+              title: const Text('Add Task'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _taskController,
+                    decoration:
+                        const InputDecoration(hintText: 'Enter task title'),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('Category: '),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Radio<bool>(
+                              value: false,
+                              groupValue: _isAddingNewCategory,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isAddingNewCategory = value!;
+                                });
+                              },
+                            ),
+                            const Text('Select'),
+                            Radio<bool>(
+                              value: true,
+                              groupValue: _isAddingNewCategory,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isAddingNewCategory = value!;
+                                });
+                              },
+                            ),
+                            const Text('Add New'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!_isAddingNewCategory)
+                    BlocBuilder<TaskBloc, TaskState>(
+                      bloc: parentContext.read<TaskBloc>(),
+                      builder: (context, state) {
+                        return DropdownButton<String>(
+                          value: _selectedCategory,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value!;
+                            });
+                          },
+                          items: state.categories
+                              .map((category) => DropdownMenuItem(
+                                    value: category,
+                                    child: Text(category),
+                                  ))
+                              .toList(),
+                        );
+                      },
+                    )
+                  else
+                    TextField(
+                      controller: _categoryController,
+                      decoration:
+                          const InputDecoration(hintText: 'Enter new category'),
                     ),
-                  );
-                } else {
-                  _taskBloc.add(AddTaskEvent(_taskController.text));
-                  _taskController.clear();
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (_taskController.text.trim().isEmpty) {
+                      _scaffoldMessengerKey.currentState?.showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a task title'),
+                        ),
+                      );
+                    } else if (_isAddingNewCategory &&
+                        _categoryController.text.trim().isEmpty) {
+                      _scaffoldMessengerKey.currentState?.showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a category'),
+                        ),
+                      );
+                    } else {
+                      final category = _isAddingNewCategory
+                          ? _categoryController.text.trim()
+                          : _selectedCategory;
+                      _taskBloc
+                          .add(AddTaskEvent(_taskController.text, category));
+                      _taskController.clear();
+                      _categoryController.clear();
+                      Navigator.pop(dialogContext);
+                    }
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  void _showEditTaskDialog(int index, String currentTitle) {
+  void _showEditTaskDialog(
+      int index, String currentTitle, String currentCategory) {
+    final parentContext = context; // Capture the TaskScreen's context
     _taskController.text = currentTitle;
+    _categoryController.clear();
+    _selectedCategory = currentCategory;
+    _isAddingNewCategory = false; // Reset toggle
     showDialog<void>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Task'),
-          content: TextField(
-            controller: _taskController,
-            decoration: const InputDecoration(hintText: 'Enter new task title'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (_taskController.text.trim().isEmpty) {
-                  _scaffoldMessengerKey.currentState?.showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a task title'),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            return AlertDialog(
+              title: const Text('Edit Task'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _taskController,
+                    decoration:
+                        const InputDecoration(hintText: 'Enter new task title'),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('Category: '),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Radio<bool>(
+                              value: false,
+                              groupValue: _isAddingNewCategory,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isAddingNewCategory = value!;
+                                });
+                              },
+                            ),
+                            const Text('Select'),
+                            Radio<bool>(
+                              value: true,
+                              groupValue: _isAddingNewCategory,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isAddingNewCategory = value!;
+                                });
+                              },
+                            ),
+                            const Text('Add New'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!_isAddingNewCategory)
+                    BlocBuilder<TaskBloc, TaskState>(
+                      bloc: parentContext.read<TaskBloc>(),
+                      builder: (context, state) {
+                        return DropdownButton<String>(
+                          value: _selectedCategory,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value!;
+                            });
+                          },
+                          items: state.categories
+                              .map((category) => DropdownMenuItem(
+                                    value: category,
+                                    child: Text(category),
+                                  ))
+                              .toList(),
+                        );
+                      },
+                    )
+                  else
+                    TextField(
+                      controller: _categoryController,
+                      decoration:
+                          const InputDecoration(hintText: 'Enter new category'),
                     ),
-                  );
-                } else {
-                  _taskBloc.add(EditTaskEvent(index, _taskController.text));
-                  _taskController.clear();
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (_taskController.text.trim().isEmpty) {
+                      _scaffoldMessengerKey.currentState?.showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a task title'),
+                        ),
+                      );
+                    } else if (_isAddingNewCategory &&
+                        _categoryController.text.trim().isEmpty) {
+                      _scaffoldMessengerKey.currentState?.showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a category'),
+                        ),
+                      );
+                    } else {
+                      final category = _isAddingNewCategory
+                          ? _categoryController.text.trim()
+                          : _selectedCategory;
+                      _taskBloc.add(
+                          EditTaskEvent(index, _taskController.text, category));
+                      _taskController.clear();
+                      _categoryController.clear();
+                      Navigator.pop(dialogContext);
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -191,10 +361,10 @@ class _TaskScreenState extends State<TaskScreen> {
                       size: 30,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Task Manager',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: 0.5,
@@ -202,160 +372,214 @@ class _TaskScreenState extends State<TaskScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 48), // Spacer for balance
+                const SizedBox(width: 48),
               ],
             ),
           ),
         ),
-        body: BlocConsumer<TaskBloc, TaskState>(
-          listener: (context, state) {
-            if (state.error != null) {
-              print('Error received in listener: ${state.error}');
-              _scaffoldMessengerKey.currentState?.clearSnackBars();
-              _scaffoldMessengerKey.currentState?.showSnackBar(
-                SnackBar(content: Text(state.error!)),
-              );
-            }
-          },
-          builder: (context, state) {
-            if (state.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state.tasks.isEmpty) {
-              return const Center(
-                child: Text('No tasks yet. Add one!'),
-              );
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.all(20.0),
-              itemCount: state.tasks.length,
-              itemBuilder: (context, index) {
-                final task = state.tasks[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Dismissible(
-                    key: Key(task.id),
-                    direction: DismissDirection.horizontal,
-                    background: const SwipeActionBackground(
-                      alignment: Alignment.centerLeft,
-                      color: Colors.blueAccent,
-                      icon: Icons.edit,
-                      label: 'Edit',
-                    ),
-                    secondaryBackground: const SwipeActionBackground(
-                      alignment: Alignment.centerRight,
-                      color: Colors.redAccent,
-                      icon: Icons.delete,
-                      label: 'Delete',
-                    ),
-                    confirmDismiss: (direction) async {
-                      if (direction == DismissDirection.startToEnd) {
-                        Future.delayed(Duration.zero,
-                            () => _showEditTaskDialog(index, task.title));
-                        return false;
-                      } else {
-                        return await _showDeleteConfirmDialog(context);
-                      }
-                    },
-                    onDismissed: (direction) {
-                      if (direction == DismissDirection.endToStart) {
-                        _taskBloc.add(DeleteTaskEvent(index));
-                        _scaffoldMessengerKey.currentState?.clearSnackBars();
-                        _scaffoldMessengerKey.currentState?.showSnackBar(
-                          const SnackBar(
-                            content: Text('Task deleted'),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: BlocBuilder<TaskBloc, TaskState>(
+                builder: (context, state) {
+                  return Row(
+                    children: [
+                      const Text(
+                        'Filter by Category:',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      DropdownButton<String?>(
+                        value: state.filterCategory,
+                        hint: const Text('All'),
+                        onChanged: (value) {
+                          _taskBloc.add(SetCategoryFilterEvent(value));
+                        },
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('All'),
                           ),
-                        );
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.fastOutSlowIn,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.95),
-                        borderRadius: BorderRadius.circular(18.0),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
+                          ...state.categories
+                              .map((category) => DropdownMenuItem<String>(
+                                    value: category,
+                                    child: Text(category),
+                                  )),
                         ],
                       ),
-                      child: Stack(
-                        children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 40.0, vertical: 14.0),
-                            title: Text(
-                              task.title,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                                color: task.isCompleted
-                                    ? Colors.grey
-                                    : Colors.black87,
-                                decoration: task.isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                              ),
-                            ),
-                            leading: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              transitionBuilder: (child, animation) =>
-                                  ScaleTransition(
-                                      scale: animation, child: child),
-                              child: task.isCompleted
-                                  ? const Icon(Icons.check_circle,
-                                      key: ValueKey(true),
-                                      color: Colors.green,
-                                      size: 28)
-                                  : const Icon(Icons.radio_button_unchecked,
-                                      key: ValueKey(false),
-                                      color: Colors.grey,
-                                      size: 28),
-                            ),
-                            onTap: () {
-                              _taskBloc.add(ToggleTaskCompletionEvent(index));
-                            },
+                    ],
+                  );
+                },
+              ),
+            ),
+            Expanded(
+              child: BlocConsumer<TaskBloc, TaskState>(
+                listener: (context, state) {
+                  if (state.error != null) {
+                    print('Error received in listener: ${state.error}');
+                    _scaffoldMessengerKey.currentState?.clearSnackBars();
+                    _scaffoldMessengerKey.currentState?.showSnackBar(
+                      SnackBar(content: Text(state.error!)),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  if (state.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final tasksToShow = state.filteredTasks;
+                  if (tasksToShow.isEmpty) {
+                    return const Center(
+                      child: Text('No tasks yet. Add one!'),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(20.0),
+                    itemCount: tasksToShow.length,
+                    itemBuilder: (context, index) {
+                      final task = tasksToShow[index];
+                      final originalIndex = state.tasks.indexOf(task);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Dismissible(
+                          key: Key(task.id),
+                          direction: DismissDirection.horizontal,
+                          background: const SwipeActionBackground(
+                            alignment: Alignment.centerLeft,
+                            color: Colors.blueAccent,
+                            icon: Icons.edit,
+                            label: 'Edit',
                           ),
-                          Positioned(
-                            left: 10,
-                            top: 0,
-                            bottom: 0,
-                            child: AnimatedOpacity(
-                              opacity: 0.6,
-                              duration: const Duration(milliseconds: 1000),
-                              child: Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.blueAccent,
-                                size: 18,
-                              ),
+                          secondaryBackground: const SwipeActionBackground(
+                            alignment: Alignment.centerRight,
+                            color: Colors.redAccent,
+                            icon: Icons.delete,
+                            label: 'Delete',
+                          ),
+                          confirmDismiss: (direction) async {
+                            if (direction == DismissDirection.startToEnd) {
+                              Future.delayed(
+                                  Duration.zero,
+                                  () => _showEditTaskDialog(originalIndex,
+                                      task.title, task.category));
+                              return false;
+                            } else {
+                              return await _showDeleteConfirmDialog(context);
+                            }
+                          },
+                          onDismissed: (direction) {
+                            if (direction == DismissDirection.endToStart) {
+                              _taskBloc.add(DeleteTaskEvent(originalIndex));
+                              _scaffoldMessengerKey.currentState
+                                  ?.clearSnackBars();
+                              _scaffoldMessengerKey.currentState?.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Task deleted'),
+                                ),
+                              );
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.fastOutSlowIn,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(18.0),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 40.0, vertical: 14.0),
+                                  title: Text(
+                                    task.title,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5,
+                                      color: task.isCompleted
+                                          ? Colors.grey
+                                          : Colors.black87,
+                                      decoration: task.isCompleted
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    'Category: ${task.category}',
+                                    style: const TextStyle(
+                                        fontSize: 14, color: Colors.black54),
+                                  ),
+                                  leading: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    transitionBuilder: (child, animation) =>
+                                        ScaleTransition(
+                                            scale: animation, child: child),
+                                    child: task.isCompleted
+                                        ? const Icon(Icons.check_circle,
+                                            key: ValueKey(true),
+                                            color: Colors.green,
+                                            size: 28)
+                                        : const Icon(
+                                            Icons.radio_button_unchecked,
+                                            key: ValueKey(false),
+                                            color: Colors.grey,
+                                            size: 28),
+                                  ),
+                                  onTap: () {
+                                    _taskBloc.add(ToggleTaskCompletionEvent(
+                                        originalIndex));
+                                  },
+                                ),
+                                Positioned(
+                                  left: 10,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: AnimatedOpacity(
+                                    opacity: 0.6,
+                                    duration:
+                                        const Duration(milliseconds: 1000),
+                                    child: Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.blueAccent,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 10,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: AnimatedOpacity(
+                                    opacity: 0.6,
+                                    duration:
+                                        const Duration(milliseconds: 1000),
+                                    child: Icon(
+                                      Icons.arrow_back_ios,
+                                      color: Colors.redAccent,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Positioned(
-                            right: 10,
-                            top: 0,
-                            bottom: 0,
-                            child: AnimatedOpacity(
-                              opacity: 0.6,
-                              duration: const Duration(milliseconds: 1000),
-                              child: Icon(
-                                Icons.arrow_back_ios,
-                                color: Colors.redAccent,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _showAddTaskDialog,
@@ -388,6 +612,7 @@ class _TaskScreenState extends State<TaskScreen> {
   @override
   void dispose() {
     _taskController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 }

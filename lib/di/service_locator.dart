@@ -6,6 +6,8 @@ import 'package:task_manager_app/repositories/task_repository.dart';
 final GetIt getIt = GetIt.instance;
 
 void setupServiceLocator() {
-  getIt.registerLazySingleton<TaskRepository>(() => SharedPreferencesTaskRepository());
-  getIt.registerFactory<TaskBloc>(() => TaskBloc(taskRepository: getIt<TaskRepository>()));
+  getIt.registerLazySingleton<TaskRepository>(
+      () => SharedPreferencesTaskRepository());
+  getIt.registerFactory<TaskBloc>(
+      () => TaskBloc(taskRepository: getIt<TaskRepository>()));
 }

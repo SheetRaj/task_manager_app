@@ -1,21 +1,11 @@
-// lib/commands/task_command.dart
 import 'package:task_manager_app/models/task.dart';
-import 'package:meta/meta.dart';
 
-/// An interface for commands that can be executed, undone, and redone.
 abstract class TaskCommand {
-  /// Executes the command.
   void execute(List<Task> tasks);
-
-  /// Undoes the command.
   void undo(List<Task> tasks);
-
-  /// Redoes the command by default calls execute.
-  @nonVirtual
   void redo(List<Task> tasks) => execute(tasks);
 }
 
-/// A command to add a task.
 class AddTaskCommand extends TaskCommand {
   final Task task;
 
@@ -32,7 +22,6 @@ class AddTaskCommand extends TaskCommand {
   }
 }
 
-/// A command to delete a task.
 class DeleteTaskCommand extends TaskCommand {
   final Task task;
   final int index;
@@ -50,21 +39,24 @@ class DeleteTaskCommand extends TaskCommand {
   }
 }
 
-/// A command to edit a task's title.
 class EditTaskCommand extends TaskCommand {
   final int index;
   final String newTitle;
+  final String newCategory;
   String? _oldTitle;
+  String? _oldCategory;
 
-  EditTaskCommand(this.index, this.newTitle);
+  EditTaskCommand(this.index, this.newTitle, this.newCategory);
 
   @override
   void execute(List<Task> tasks) {
     _oldTitle = tasks[index].title;
+    _oldCategory = tasks[index].category;
     tasks[index] = Task(
       id: tasks[index].id,
       title: newTitle,
       isCompleted: tasks[index].isCompleted,
+      category: newCategory,
     );
   }
 
@@ -74,11 +66,11 @@ class EditTaskCommand extends TaskCommand {
       id: tasks[index].id,
       title: _oldTitle!,
       isCompleted: tasks[index].isCompleted,
+      category: _oldCategory!,
     );
   }
 }
 
-/// A command to toggle a task's completion status.
 class ToggleCompletionCommand extends TaskCommand {
   final int index;
 

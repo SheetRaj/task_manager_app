@@ -10,6 +10,12 @@ class SharedPreferencesTaskRepository implements TaskRepository {
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(milliseconds: 500);
   static const Duration _postSaveDelay = Duration(milliseconds: 100);
+  static const List<String> _predefinedCategories = [
+    'Uncategorized',
+    'Work',
+    'Personal',
+    'Shopping',
+  ];
 
   // Loads tasks from shared preferences.
   @override
@@ -60,5 +66,13 @@ class SharedPreferencesTaskRepository implements TaskRepository {
         await Future<void>.delayed(_retryDelay);
       }
     }
+  }
+
+  @override
+  Future<List<String>> getCategories() async {
+    final tasks = await loadTasks();
+    final categories = tasks.map((task) => task.category).toSet().toList();
+    final allCategories = {..._predefinedCategories, ...categories}.toList();
+    return allCategories;
   }
 }

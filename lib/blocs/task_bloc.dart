@@ -18,6 +18,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final task = Task(
         id: DateTime.now().toString(),
         title: event.title,
+        category: event.category,
       );
       final command = AddTaskCommand(task);
       await _executeCommand(command, emit);
@@ -37,7 +38,11 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       ));
       try {
         final tasks = await _taskRepository.loadTasks();
-        emit(TaskState(tasks: tasks));
+        final categories = await _taskRepository.getCategories();
+        emit(TaskState(
+          tasks: tasks,
+          categories: categories,
+        ));
       } catch (e) {
         emit(TaskState(
           tasks: [],
@@ -56,7 +61,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     on<EditTaskEvent>((event, emit) async {
       if (event.index >= 0 && event.index < state.tasks.length) {
-        final command = EditTaskCommand(event.index, event.newTitle);
+        final command =
+            EditTaskCommand(event.index, event.newTitle, event.newCategory);
         await _executeCommand(command, emit);
       }
     }, transformer: null);
@@ -72,13 +78,18 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           isLoading: true,
           canUndo: _currentCommandIndex >= 0,
           canRedo: _currentCommandIndex < _commandHistory.length - 1,
+          filterCategory: state.filterCategory,
+          categories: state.categories,
         ));
         try {
           await _taskRepository.saveTasks(updatedTasks);
+          final categories = await _taskRepository.getCategories();
           emit(TaskState(
             tasks: updatedTasks,
             canUndo: _currentCommandIndex >= 0,
             canRedo: _currentCommandIndex < _commandHistory.length - 1,
+            filterCategory: state.filterCategory,
+            categories: categories,
           ));
         } catch (e) {
           emit(TaskState(
@@ -86,6 +97,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             error: 'Failed to undo action: $e',
             canUndo: _currentCommandIndex >= 0,
             canRedo: _currentCommandIndex < _commandHistory.length - 1,
+            filterCategory: state.filterCategory,
+            categories: state.categories,
           ));
         }
       }
@@ -102,13 +115,18 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           isLoading: true,
           canUndo: _currentCommandIndex >= 0,
           canRedo: _currentCommandIndex < _commandHistory.length - 1,
+          filterCategory: state.filterCategory,
+          categories: state.categories,
         ));
         try {
           await _taskRepository.saveTasks(updatedTasks);
+          final categories = await _taskRepository.getCategories();
           emit(TaskState(
             tasks: updatedTasks,
             canUndo: _currentCommandIndex >= 0,
             canRedo: _currentCommandIndex < _commandHistory.length - 1,
+            filterCategory: state.filterCategory,
+            categories: categories,
           ));
         } catch (e) {
           emit(TaskState(
@@ -116,8 +134,42 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             error: 'Failed to redo action: $e',
             canUndo: _currentCommandIndex >= 0,
             canRedo: _currentCommandIndex < _commandHistory.length - 1,
+            filterCategory: state.filterCategory,
+            categories: state.categories,
           ));
         }
+      }
+    }, transformer: null);
+
+    on<SetCategoryFilterEvent>((event, emit) async {
+      emit(TaskState(
+        tasks: state.tasks,
+        canUndo: state.canUndo,
+        canRedo: state.canRedo,
+        filterCategory: event.category,
+        categories: state.categories,
+      ));
+    }, transformer: null);
+
+    on<LoadCategoriesEvent>((event, emit) async {
+      try {
+        final categories = await _taskRepository.getCategories();
+        emit(TaskState(
+          tasks: state.tasks,
+          canUndo: state.canUndo,
+          canRedo: state.canRedo,
+          filterCategory: state.filterCategory,
+          categories: categories,
+        ));
+      } catch (e) {
+        emit(TaskState(
+          tasks: state.tasks,
+          error: 'Failed to load categories: $e',
+          canUndo: state.canUndo,
+          canRedo: state.canRedo,
+          filterCategory: state.filterCategory,
+          categories: state.categories,
+        ));
       }
     }, transformer: null);
 
@@ -126,11 +178,11 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
   Future<void> _initialize() async {
     add(LoadTasksEvent());
+    add(LoadCategoriesEvent());
   }
 
   Future<void> _executeCommand(
       TaskCommand command, Emitter<TaskState> emit) async {
-    // Clear redo history after a new command
     if (_currentCommandIndex < _commandHistory.length - 1) {
       _commandHistory.removeRange(
           _currentCommandIndex + 1, _commandHistory.length);
@@ -141,21 +193,24 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _commandHistory.add(command);
     _currentCommandIndex++;
 
-    // Emit the loading state
     emit(TaskState(
       tasks: updatedTasks,
       isLoading: true,
       canUndo: _currentCommandIndex >= 0,
       canRedo: _currentCommandIndex < _commandHistory.length - 1,
+      filterCategory: state.filterCategory,
+      categories: state.categories,
     ));
 
-    // Perform the save operation and emit the final state
     try {
       await _taskRepository.saveTasks(updatedTasks);
+      final categories = await _taskRepository.getCategories();
       emit(TaskState(
         tasks: updatedTasks,
         canUndo: _currentCommandIndex >= 0,
         canRedo: _currentCommandIndex < _commandHistory.length - 1,
+        filterCategory: state.filterCategory,
+        categories: categories,
       ));
     } catch (e) {
       emit(TaskState(
@@ -163,6 +218,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         error: 'Failed to save tasks: $e',
         canUndo: _currentCommandIndex >= 0,
         canRedo: _currentCommandIndex < _commandHistory.length - 1,
+        filterCategory: state.filterCategory,
+        categories: state.categories,
       ));
     }
   }

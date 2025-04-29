@@ -3,7 +3,9 @@ abstract class TaskEvent {}
 class AddTaskEvent extends TaskEvent {
   final String title;
 
-  AddTaskEvent(this.title);
+  final String category;
+
+  AddTaskEvent(this.title, this.category);
 }
 
 class ToggleTaskCompletionEvent extends TaskEvent {
@@ -26,7 +28,9 @@ class EditTaskEvent extends TaskEvent {
   final int index;
   final String newTitle;
 
-  EditTaskEvent(this.index, this.newTitle);
+  final String newCategory;
+
+  EditTaskEvent(this.index, this.newTitle, this.newCategory);
 }
 
 class UndoEvent extends TaskEvent {
@@ -37,6 +41,12 @@ class RedoEvent extends TaskEvent {
   RedoEvent();
 }
 
-class UndoDeleteTaskEvent extends TaskEvent {
-  UndoDeleteTaskEvent();
+class SetCategoryFilterEvent extends TaskEvent {
+  final String? category;
+
+  SetCategoryFilterEvent(this.category);
+}
+
+class LoadCategoriesEvent extends TaskEvent {
+  LoadCategoriesEvent();
 }
