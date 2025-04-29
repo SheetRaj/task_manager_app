@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_manager_app/blocs/task_bloc.dart';
-import 'package:task_manager_app/repositories/shared_preferences_task_repository.dart';
+import 'package:task_manager_app/di/service_locator.dart';
 import 'package:task_manager_app/screens/task_screen.dart';
 import 'blocs/task_event.dart';
 
 void main() {
+  setupServiceLocator();
   runApp(const TaskManagerApp());
 }
 
@@ -24,9 +25,7 @@ class TaskManagerApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: BlocProvider(
-        create: (context) => TaskBloc(
-          taskRepository: SharedPreferencesTaskRepository(),
-        )..add(LoadTasksEvent()),
+        create: (context) => getIt<TaskBloc>()..add(LoadTasksEvent()),
         child: const TaskScreen(),
       ),
     );

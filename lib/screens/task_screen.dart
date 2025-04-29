@@ -1,6 +1,6 @@
-// lib/screens/task_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:task_manager_app/blocs/task_bloc.dart';
 import 'package:task_manager_app/blocs/task_event.dart';
 import 'package:task_manager_app/blocs/task_state.dart';
@@ -24,6 +24,40 @@ class _TaskScreenState extends State<TaskScreen> {
   void initState() {
     super.initState();
     _taskBloc = context.read<TaskBloc>();
+    _showOnboardingIfNeeded();
+  }
+
+  Future<void> _showOnboardingIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    const onboardingKey = 'has_seen_swipe_onboarding';
+    final hasSeenOnboarding = prefs.getBool(onboardingKey) ?? false;
+
+    if (!hasSeenOnboarding) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        showDialog<void>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Swipe to Manage Tasks'),
+              content: const Text(
+                'Swipe left on a task to edit it, or swipe right to delete it.\n\n'
+                'Look for the arrows on each task card as a hint!',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    prefs.setBool(onboardingKey, true);
+                  },
+                  child: const Text('Got It'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
   }
 
   void _showAddTaskDialog() {
@@ -115,23 +149,60 @@ class _TaskScreenState extends State<TaskScreen> {
               color: Colors.black,
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.task_alt,
-                  color: Colors.white,
-                  size: 30,
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.undo, color: Colors.white),
+                      onPressed: context.watch<TaskBloc>().state.canUndo
+                          ? () {
+                              _taskBloc.add(UndoEvent());
+                              _scaffoldMessengerKey.currentState?.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Action undone'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          : null,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.redo, color: Colors.white),
+                      onPressed: context.watch<TaskBloc>().state.canRedo
+                          ? () {
+                              _taskBloc.add(RedoEvent());
+                              _scaffoldMessengerKey.currentState?.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Action redone'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          : null,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Task Manager',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.task_alt,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Task Manager',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(width: 48), // Spacer for balance
               ],
             ),
           ),
@@ -139,6 +210,8 @@ class _TaskScreenState extends State<TaskScreen> {
         body: BlocConsumer<TaskBloc, TaskState>(
           listener: (context, state) {
             if (state.error != null) {
+              print('Error received in listener: ${state.error}');
+              _scaffoldMessengerKey.currentState?.clearSnackBars();
               _scaffoldMessengerKey.currentState?.showSnackBar(
                 SnackBar(content: Text(state.error!)),
               );
@@ -167,11 +240,13 @@ class _TaskScreenState extends State<TaskScreen> {
                       alignment: Alignment.centerLeft,
                       color: Colors.blueAccent,
                       icon: Icons.edit,
+                      label: 'Edit',
                     ),
                     secondaryBackground: const SwipeActionBackground(
                       alignment: Alignment.centerRight,
                       color: Colors.redAccent,
                       icon: Icons.delete,
+                      label: 'Delete',
                     ),
                     confirmDismiss: (direction) async {
                       if (direction == DismissDirection.startToEnd) {
@@ -187,26 +262,8 @@ class _TaskScreenState extends State<TaskScreen> {
                         _taskBloc.add(DeleteTaskEvent(index));
                         _scaffoldMessengerKey.currentState?.clearSnackBars();
                         _scaffoldMessengerKey.currentState?.showSnackBar(
-                          SnackBar(
-                            content: const Text('Task deleted'),
-                            action: SnackBarAction(
-                              label: 'Undo',
-                              onPressed: () {
-                                // Clear the current snackbar
-                                _scaffoldMessengerKey.currentState
-                                    ?.clearSnackBars();
-                                // Dispatch the undo event
-                                _taskBloc.add(UndoDeleteTaskEvent());
-                                // Show a confirmation snackbar
-                                _scaffoldMessengerKey.currentState
-                                    ?.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Task restored'),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                              },
-                            ),
+                          const SnackBar(
+                            content: Text('Task deleted'),
                           ),
                         );
                       }
@@ -225,39 +282,73 @@ class _TaskScreenState extends State<TaskScreen> {
                           ),
                         ],
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20.0, vertical: 14.0),
-                        title: Text(
-                          task.title,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color:
-                                task.isCompleted ? Colors.grey : Colors.black87,
-                            decoration: task.isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
+                      child: Stack(
+                        children: [
+                          ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 40.0, vertical: 14.0),
+                            title: Text(
+                              task.title,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                                color: task.isCompleted
+                                    ? Colors.grey
+                                    : Colors.black87,
+                                decoration: task.isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                            leading: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              transitionBuilder: (child, animation) =>
+                                  ScaleTransition(
+                                      scale: animation, child: child),
+                              child: task.isCompleted
+                                  ? const Icon(Icons.check_circle,
+                                      key: ValueKey(true),
+                                      color: Colors.green,
+                                      size: 28)
+                                  : const Icon(Icons.radio_button_unchecked,
+                                      key: ValueKey(false),
+                                      color: Colors.grey,
+                                      size: 28),
+                            ),
+                            onTap: () {
+                              _taskBloc.add(ToggleTaskCompletionEvent(index));
+                            },
                           ),
-                        ),
-                        leading: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          transitionBuilder: (child, animation) =>
-                              ScaleTransition(scale: animation, child: child),
-                          child: task.isCompleted
-                              ? const Icon(Icons.check_circle,
-                                  key: ValueKey(true),
-                                  color: Colors.green,
-                                  size: 28)
-                              : const Icon(Icons.radio_button_unchecked,
-                                  key: ValueKey(false),
-                                  color: Colors.grey,
-                                  size: 28),
-                        ),
-                        onTap: () {
-                          _taskBloc.add(ToggleTaskCompletionEvent(index));
-                        },
+                          Positioned(
+                            left: 10,
+                            top: 0,
+                            bottom: 0,
+                            child: AnimatedOpacity(
+                              opacity: 0.6,
+                              duration: const Duration(milliseconds: 1000),
+                              child: Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.blueAccent,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 10,
+                            top: 0,
+                            bottom: 0,
+                            child: AnimatedOpacity(
+                              opacity: 0.6,
+                              duration: const Duration(milliseconds: 1000),
+                              child: Icon(
+                                Icons.arrow_back_ios,
+                                color: Colors.redAccent,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

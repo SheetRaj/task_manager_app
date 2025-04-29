@@ -7,9 +7,15 @@ class TaskState {
 
   final String? error;
 
+  final bool canUndo;
+
+  final bool canRedo;
+
   const TaskState({
     required this.tasks,
     this.isLoading = false,
     this.error,
+    this.canUndo = false,
+    this.canRedo = false,
   });
 }

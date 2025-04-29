@@ -29,6 +29,14 @@ class EditTaskEvent extends TaskEvent {
   EditTaskEvent(this.index, this.newTitle);
 }
 
+class UndoEvent extends TaskEvent {
+  UndoEvent();
+}
+
+class RedoEvent extends TaskEvent {
+  RedoEvent();
+}
+
 class UndoDeleteTaskEvent extends TaskEvent {
   UndoDeleteTaskEvent();
 }
