@@ -2,18 +2,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_manager_app/blocs/task_event.dart';
 import 'package:task_manager_app/blocs/task_state.dart';
 import 'package:task_manager_app/models/task.dart';
-import 'package:task_manager_app/services/task_storage_service.dart';
+import 'package:task_manager_app/repositories/task_repository.dart';
 
 /// Manages the business logic for task-related operations.
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
-  final TaskStorageService _storageService;
+  final TaskRepository _taskRepository;
   Task? _lastDeletedTask;
   int? _lastDeletedIndex;
 
   /// Creates a [TaskBloc] with an initial list of tasks loaded from storage.
-  TaskBloc({TaskStorageService? storageService})
-      : _storageService = storageService ?? TaskStorageService(),
-        super(TaskState(tasks: [])) {
+  TaskBloc({required TaskRepository taskRepository})
+      : _taskRepository = taskRepository,
+        super(const TaskState(tasks: [])) {
     on<AddTaskEvent>((event, emit) async {
       if (event.title.isNotEmpty) {
         final updatedTasks = List<Task>.from(state.tasks)
@@ -26,7 +26,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           isLoading: true,
         ));
         try {
-          await _storageService.saveTasks(updatedTasks);
+          await _taskRepository.saveTasks(updatedTasks);
           emit(TaskState(tasks: updatedTasks));
         } catch (e) {
           emit(TaskState(
@@ -48,7 +48,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         ));
 
         try {
-          await _storageService.saveTasks(updatedTasks);
+          await _taskRepository.saveTasks(updatedTasks);
           emit(TaskState(tasks: updatedTasks));
         } catch (e) {
           emit(TaskState(
@@ -58,6 +58,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         }
       }
     }, transformer: null);
+
     on<LoadTasksEvent>((event, emit) async {
       emit(const TaskState(
         tasks: [],
@@ -65,7 +66,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       ));
 
       try {
-        final tasks = await _storageService.loadTasks();
+        final tasks = await _taskRepository.loadTasks();
         emit(TaskState(tasks: tasks));
       } catch (e) {
         emit(TaskState(
@@ -87,7 +88,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         ));
 
         try {
-          await _storageService.saveTasks(updatedTasks);
+          await _taskRepository.saveTasks(updatedTasks);
           emit(TaskState(tasks: updatedTasks));
         } catch (e) {
           emit(TaskState(
@@ -103,13 +104,16 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         final updatedTasks = List<Task>.from(state.tasks);
         final taskToEdit = updatedTasks[event.index];
         updatedTasks[event.index] = Task(
-            id: taskToEdit.id,
-            title: event.newTitle,
-            isCompleted: taskToEdit.isCompleted);
-        emit(TaskState(tasks: updatedTasks, isLoading: true));
-
+          id: taskToEdit.id,
+          title: event.newTitle,
+          isCompleted: taskToEdit.isCompleted,
+        );
+        emit(TaskState(
+          tasks: updatedTasks,
+          isLoading: true,
+        ));
         try {
-          await _storageService.saveTasks(updatedTasks);
+          await _taskRepository.saveTasks(updatedTasks);
           emit(TaskState(tasks: updatedTasks));
         } catch (e) {
           emit(TaskState(
@@ -118,7 +122,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           ));
         }
       }
-    });
+    }, transformer: null);
 
     on<UndoDeleteTaskEvent>((event, emit) async {
       if (_lastDeletedTask != null && _lastDeletedIndex != null) {
@@ -130,12 +134,12 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         ));
 
         try {
-          await _storageService.saveTasks(updatedTasks);
-          print('After saving (undo): $updatedTasks');
+          await _taskRepository.saveTasks(updatedTasks);
           emit(TaskState(tasks: updatedTasks));
           _lastDeletedTask = null;
           _lastDeletedIndex = null;
         } catch (e) {
+          print('Error saving tasks during undo: $e');
           emit(TaskState(
             tasks: updatedTasks,
             error: 'Failed to undo deletion: $e',

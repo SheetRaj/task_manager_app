@@ -176,7 +176,7 @@ class _TaskScreenState extends State<TaskScreen> {
                     confirmDismiss: (direction) async {
                       if (direction == DismissDirection.startToEnd) {
                         Future.delayed(Duration.zero,
-                                () => _showEditTaskDialog(index, task.title));
+                            () => _showEditTaskDialog(index, task.title));
                         return false;
                       } else {
                         return await _showDeleteConfirmDialog(context);
@@ -198,7 +198,8 @@ class _TaskScreenState extends State<TaskScreen> {
                                 // Dispatch the undo event
                                 _taskBloc.add(UndoDeleteTaskEvent());
                                 // Show a confirmation snackbar
-                                _scaffoldMessengerKey.currentState?.showSnackBar(
+                                _scaffoldMessengerKey.currentState
+                                    ?.showSnackBar(
                                   const SnackBar(
                                     content: Text('Task restored'),
                                     duration: Duration(seconds: 2),
@@ -233,7 +234,8 @@ class _TaskScreenState extends State<TaskScreen> {
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,
-                            color: task.isCompleted ? Colors.grey : Colors.black87,
+                            color:
+                                task.isCompleted ? Colors.grey : Colors.black87,
                             decoration: task.isCompleted
                                 ? TextDecoration.lineThrough
                                 : null,
@@ -245,9 +247,13 @@ class _TaskScreenState extends State<TaskScreen> {
                               ScaleTransition(scale: animation, child: child),
                           child: task.isCompleted
                               ? const Icon(Icons.check_circle,
-                              key: ValueKey(true), color: Colors.green, size: 28)
+                                  key: ValueKey(true),
+                                  color: Colors.green,
+                                  size: 28)
                               : const Icon(Icons.radio_button_unchecked,
-                              key: ValueKey(false), color: Colors.grey, size: 28),
+                                  key: ValueKey(false),
+                                  color: Colors.grey,
+                                  size: 28),
                         ),
                         onTap: () {
                           _taskBloc.add(ToggleTaskCompletionEvent(index));

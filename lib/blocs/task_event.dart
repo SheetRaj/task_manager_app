@@ -32,4 +32,3 @@ class EditTaskEvent extends TaskEvent {
 class UndoDeleteTaskEvent extends TaskEvent {
   UndoDeleteTaskEvent();
 }
-
