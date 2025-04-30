@@ -43,20 +43,24 @@ class EditTaskCommand extends TaskCommand {
   final int index;
   final String newTitle;
   final String newCategory;
+  final DateTime? newDueDate;
   String? _oldTitle;
   String? _oldCategory;
+  DateTime? _oldDueDate;
 
-  EditTaskCommand(this.index, this.newTitle, this.newCategory);
+  EditTaskCommand(this.index, this.newTitle, this.newCategory, this.newDueDate);
 
   @override
   void execute(List<Task> tasks) {
     _oldTitle = tasks[index].title;
     _oldCategory = tasks[index].category;
+    _oldDueDate = tasks[index].dueDate;
     tasks[index] = Task(
       id: tasks[index].id,
       title: newTitle,
       isCompleted: tasks[index].isCompleted,
       category: newCategory,
+      dueDate: newDueDate,
     );
   }
 
@@ -67,6 +71,7 @@ class EditTaskCommand extends TaskCommand {
       title: _oldTitle!,
       isCompleted: tasks[index].isCompleted,
       category: _oldCategory!,
+      dueDate: _oldDueDate,
     );
   }
 }

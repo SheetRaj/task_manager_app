@@ -3,12 +3,14 @@ class Task {
   final String title;
   final bool isCompleted;
   final String category;
+  final DateTime? dueDate;
 
   const Task({
     required this.id,
     required this.title,
     this.isCompleted = false,
     this.category = 'Uncategorized',
+    this.dueDate,
   });
 
   Task toggleCompletion() {
@@ -17,6 +19,7 @@ class Task {
       title: title,
       isCompleted: !isCompleted,
       category: category,
+      dueDate: dueDate,
     );
   }
 
@@ -26,6 +29,7 @@ class Task {
       'title': title,
       'isCompleted': isCompleted,
       'category': category,
+      'dueDate': dueDate?.toIso8601String(),
     };
   }
 
@@ -35,6 +39,9 @@ class Task {
       title: json['title'] as String,
       isCompleted: json['isCompleted'] as bool,
       category: json['category'] as String? ?? 'Uncategorized',
+      dueDate: json['dueDate'] != null
+          ? DateTime.parse(json['dueDate'] as String)
+          : null,
     );
   }
 }

@@ -29,6 +29,20 @@
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
+	<key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+    <key>UNUserNotificationCenter</key>
+    <dict>
+        <key>UNAuthorizationOptionAlert</key>
+        <true/>
+        <key>UNAuthorizationOptionBadge</key>
+        <true/>
+        <key>UNAuthorizationOptionSound</key>
+        <true/>
+    </dict>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>

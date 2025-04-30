@@ -5,7 +5,9 @@ class AddTaskEvent extends TaskEvent {
 
   final String category;
 
-  AddTaskEvent(this.title, this.category);
+  final DateTime? dueDate;
+
+  AddTaskEvent(this.title, this.category, this.dueDate);
 }
 
 class ToggleTaskCompletionEvent extends TaskEvent {
@@ -30,7 +32,9 @@ class EditTaskEvent extends TaskEvent {
 
   final String newCategory;
 
-  EditTaskEvent(this.index, this.newTitle, this.newCategory);
+  final DateTime? newDueDate;
+
+  EditTaskEvent(this.index, this.newTitle, this.newCategory, this.newDueDate);
 }
 
 class UndoEvent extends TaskEvent {
